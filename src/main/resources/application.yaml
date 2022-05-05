@@ -1,0 +1,62 @@
+server:
+  port: 8088
+  servlet:
+    context-path: /cloudstreams
+
+spring:
+  main:
+    banner-mode: off
+  application:
+    name: SpotQuote View Service
+  profiles:
+    active: local
+  kafka:
+    producer:
+      key-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        max:
+          request:
+            size: 8388608
+  cloud:
+    function:
+      definition: demobinding
+    stream:
+      bindings:
+        demo-out-0:
+          destination: demo.qry
+          contentType: application/json
+          producer:
+            partitionCount: 1
+            value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+          group: demo-streams
+        demobinding-in-0:
+          destination: demo.qry
+          contentType: application/json
+          group: demo-streams
+---
+spring:
+  profiles: prod
+  cloud:
+    stream:
+      kafka:
+        binder:
+          replication-factor: 1
+          brokers: ${CONFLUENT_CLOUD_API_ENDPOINT:pkc-4k6zp.eastus2.azure.confluent.cloud:9092}
+          autoCreateTopics: false
+          configuration:
+            security:
+              protocol: SASL_SSL
+            sasl:
+              mechanism: PLAIN
+              jaas:
+                config: org.apache.kafka.common.security.plain.PlainLoginModule required username="${CONFLUENT_CLOUD_API_KEY:NZFGZBZ6JU6IUYZB}" password="${CONFLUENT_CLOUD_API_SECRET:+LznQR1+4vCcTWyumvZSIXOkh0i8WCwQlvskcrEdp5Os3A2OuM+rpxneB7EnjlOK}";
+---
+spring:
+  profiles: local
+  cloud:
+    stream:
+      kafka:
+        binder:
+          replication-factor: 1
+          brokers: localhost:9092
+          autoCreateTopics: false
